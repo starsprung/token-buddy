@@ -1,4 +1,5 @@
 const Web3 = require("web3");
+
 const { hdkey } = require("ethereumjs-wallet");
 const bip39 = require("bip39");
 
@@ -81,5 +82,47 @@ module.exports = {
     });
     return result;
   },
-};
+  getTransactions: async () => {
+    const address = config.wallet.getAddressString().toLowerCase();
 
+    const endBlockNumber = await config.web3.eth.getBlockNumber();
+    console.log(`Using endBlockNumber: ${endBlockNumber}`);
+
+    const startBlockNumber = Math.max(endBlockNumber - 1000, 0);
+
+    console.log(`Using startBlockNumber: ${startBlockNumber}`);
+    console.log(
+      `Searching for transactions to/from account "${address}" within blocks ${startBlockNumber} and ${endBlockNumber}`
+    );
+
+    for (let i = startBlockNumber; i <= endBlockNumber; i++) {
+      const block = await config.web3.eth.getBlock(i, true);
+      if (block != null && block.transactions != null) {
+        block.transactions.forEach((e) => {
+          if (
+            address == e.from.toLowerCase() ||
+            address == e.to.toLowerCase()
+          ) {
+            console.log(`
+             tx hash         : ${e.hash}
+             nonce           : ${e.nonce}
+             blockHash       : ${e.blockHash}
+             blockNumber     : ${e.blockNumber}
+             transactionIndex: ${e.transactionIndex}
+             from            : ${e.from}
+             to              : ${e.to}
+             value           : ${e.value}
+             time            : ${block.timestamp} ${new Date(
+              block.timestamp * 1000
+            ).toGMTString()}
+             gasPrice        : ${e.gasPrice}
+             gas             : ${e.gas}
+             input           : ${e.input}`);
+          }
+        });
+
+        console.log(block);
+      }
+    }
+  },
+};
